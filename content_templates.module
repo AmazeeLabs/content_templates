@@ -1,0 +1,121 @@
+<?php
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function content_templates_entity_base_field_info(EntityTypeInterface $entity_type) {
+  $fields = [];
+  if ($entity_type->id() == 'node') {
+    // Add the new "template" base field to nodes.
+    $fields['template'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Template'))
+      ->setDescription(t('Mark this node as a template.'))
+      ->setDefaultValue(FALSE);
+  }
+  return $fields;
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function content_templates_entity_presave(EntityInterface $entity) {
+  if ($entity instanceof NodeInterface) {
+    // If a node is a template, make sure status is always unpublished.
+    if ($entity->template->value) {
+      $entity->status = NodeInterface::NOT_PUBLISHED;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_grants().
+ */
+function content_templates_node_grants(AccountInterface $account, $op) {
+  $grants = [];
+
+  if ($account->hasPermission('administer content templates')) {
+    $grants['content_templates_admin'] = [1];
+  }
+
+  if ($account->hasPermission('create content from templates')) {
+    $grants['content_templates_user'] = [1];
+  }
+
+  return $grants;
+}
+
+/**
+ * Implements hook_node_access_records().
+ */
+function content_templates_node_access_records(NodeInterface $node) {
+  $grants = [];
+  if ($node->template->value) {
+    $grants[] = [
+      'realm' => 'content_templates_admin',
+      'gid' => 1,
+      'grant_view' => 1,
+      'grant_update' => 1,
+      'grant_edit' => 1,
+      'grant_delete' => 1,
+    ];
+
+    $grants[] = [
+      'realm' => 'content_templates_user',
+      'gid' => 1,
+      'grant_view' => 1,
+      'grant_update' => 0,
+      'grant_edit' => 0,
+      'grant_delete' => 0,
+    ];
+  }
+  return $grants;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function content_templates_form_node_form_alter(&$form, FormStateInterface $form_state) {
+  $form['actions']['create_template'] = [
+    '#weight' => $form['actions']['submit']['#weight'] + 1,
+    '#type' => 'submit',
+    '#value' => t('Save as template'),
+    '#submit' => ['::submitForm', 'content_templates_create_template'],
+    '#access' => \Drupal::currentUser()->hasPermission('administer content templates'),
+  ];
+
+  // Set different button labels and hide "published" checkbox if the current
+  // node already is a template.
+  if ($form_state->getBuildInfo()['callback_object']->getEntity()->template->value) {
+    $form['actions']['submit']['#value'] = t('Save template');
+    $form['actions']['create_template']['#value'] = t('Save as new template');
+    $form['status']['#access'] = FALSE;
+  }
+}
+
+function content_templates_create_template(&$form, FormStateInterface $form_state) {
+  /** @var \Drupal\node\NodeForm $node_form */
+  $node_form = $form_state->getBuildInfo()['callback_object'];
+  $node = $node_form->buildEntity($form, $form_state);
+
+  /** @var \Drupal\replicate\Replicator $replicator */
+  $replicator = \Drupal::service('replicate.replicator');
+  $template = $replicator->cloneEntity($node);
+  $template->template = TRUE;
+  $template->created = time();
+  $template->save();
+
+  drupal_set_message(t('Template %title has been created.', [
+    '%title' => $template->label(),
+  ]));
+
+  // Remove the destination parameter, or we end up back in the content view.
+  \Drupal::request()->query->remove('destination');
+  $form_state->setRedirectUrl(Url::fromUri('base://admin/content/templates'));
+}

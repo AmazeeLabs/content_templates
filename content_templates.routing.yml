@@ -1,0 +1,12 @@
+node.add_from_template:
+  path: '/node/add/{node_type}/{node}'
+  defaults:
+    _controller: '\Drupal\content_templates\Controller\ContentTemplatesNodeController::addFromTemplate'
+    _title_callback: '\Drupal\content_templates\Controller\ContentTemplatesNodeController::addFromTemplatePageTitle'
+  requirements:
+    _node_add_access: 'node:{node_type}'
+  options:
+    _node_operation_route: TRUE
+    parameters:
+      node_type:
+        with_config_overrides: TRUE

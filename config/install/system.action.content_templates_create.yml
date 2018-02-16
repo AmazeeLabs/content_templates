@@ -1,0 +1,11 @@
+langcode: en
+status: true
+dependencies:
+  module:
+  - content_templates
+id: content_templates_create
+label: 'Create templates from content'
+weight: 10
+type: node
+plugin: content_templates_create
+configuration: {  }

@@ -1,0 +1,7 @@
+create content from templates:
+  title: 'Create content from templates'
+  description: 'Allow users to create new content from templates.'
+
+administer content templates:
+  title: 'Administer content templates'
+  description: 'Add edit or delete content templates.'
