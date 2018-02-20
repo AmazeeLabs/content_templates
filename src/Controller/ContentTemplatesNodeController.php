@@ -116,8 +116,8 @@ class ContentTemplatesNodeController extends NodeController {
       ]);
     }
 
-    // We do not want to have the template node title, so set an empty one.
-    $clone->setTitle('');
+    // Add the same title as the template node, but with a '(copy)' suffix.
+    $clone->setTitle($this->t('@title (copy)', ['@title' => $clone->label()]));
     // Also, the new node we want to save should not be by default a template.
     $clone->set('template', FALSE);
     $form = $this->entityFormBuilder()->getForm($clone);
