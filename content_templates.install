@@ -5,5 +5,5 @@
  */
 function content_templates_install() {
   // Initalise all nodes
-  db_query('update node_field_data set template = 0');
+  \Drupal::database()->query('update node_field_data set template = 0');
 }

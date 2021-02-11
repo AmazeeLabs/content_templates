@@ -111,7 +111,7 @@ function content_templates_create_template(&$form, FormStateInterface $form_stat
   $template->created = time();
   $template->save();
 
-  drupal_set_message(t('Template %title has been created.', [
+  \Drupal::messenger()->addStatus(t('Template %title has been created.', [
     '%title' => $template->label(),
   ]));
 
