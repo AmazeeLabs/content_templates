@@ -107,11 +107,11 @@ class ContentTemplatesNodeController extends NodeController {
     $clone = $this->replicator->cloneEntity($node);
 
     if (!$clone) {
-      drupal_set_message($this->t('Could not load @type template with id @id.', [
+      \Drupal::messenger()->addStatus($this->t('Could not load @type template with id @id.', [
         '@type' => $node_type->id(),
         '@id' => $node->id(),
       ]));
-      $clone = $this->entityManager()->getStorage('node')->create([
+      $clone = \Drupal::entityTypeManager()->getStorage('node')->create([
         'type' => $node_type->id(),
       ]);
     }
